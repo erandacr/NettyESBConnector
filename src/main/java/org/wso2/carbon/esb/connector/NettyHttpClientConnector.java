@@ -44,10 +44,28 @@ public class NettyHttpClientConnector extends AbstractConnector {
     public void connect(MessageContext messageContext) throws ConnectException {
         log.debug("Invoking the Netty Client connector");
         Object address = getParameter(messageContext, "address");
+
+        //proxy server
+        ProxyServerConfig proxyServerConfig = null;
+        Object proxyHost = getParameter(messageContext, "proxyServer.host");
+        Object proxyPort = getParameter(messageContext, "proxyServer.port");
+
+
         org.apache.axis2.context.MessageContext axis2MessageContext = ((Axis2MessageContext) messageContext)
                 .getAxis2MessageContext();
 
         try {
+
+            // Creating the proxy server
+            if (proxyHost != null && proxyPort != null) {
+                Object proxyUsername = getParameter(messageContext, "proxyServer.username");
+                Object proxyPassword = getParameter(messageContext, "proxyServer.password");
+                int port = Integer.parseInt((String)proxyPort);
+                proxyServerConfig = new ProxyServerConfig((String)proxyHost, port);
+                proxyServerConfig.setProxyUsername((String)proxyUsername);
+                proxyServerConfig.setProxyPassword((String)proxyPassword);
+            }
+
             if (axis2MessageContext.getProperty("HTTP_METHOD") != null && "DELETE"
                     .equalsIgnoreCase((String) axis2MessageContext.getProperty("HTTP_METHOD"))) {
                 // Preparing the message to be sent
@@ -61,7 +79,7 @@ public class NettyHttpClientConnector extends AbstractConnector {
                 messageFormatter.writeTo(axis2MessageContext, format, out, true);
                 URI uri = new URI((String) address);
                 HttpClient.sendReceive(uri, HttpClient.createRequest(uri, HttpMethod.DELETE, byteBuf,
-                        (TreeMap) axis2MessageContext.getProperty("TRANSPORT_HEADERS")), axis2MessageContext);
+                        (TreeMap) axis2MessageContext.getProperty("TRANSPORT_HEADERS")), axis2MessageContext, proxyServerConfig);
 
                 log.debug(
                         "Netty Connector processed the request " + messageContext.getMessageID() + ", To: " + address);

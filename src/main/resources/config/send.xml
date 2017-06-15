@@ -18,6 +18,10 @@
 -->
 <template name="send" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
 	<parameter name="address" />
+	<parameter name="proxyServer.host" />
+	<parameter name="proxyServer.port" />
+	<parameter name="proxyServer.username" />
+	<parameter name="proxyServer.password" />
 	<sequence>
 		<class name="org.wso2.carbon.esb.connector.NettyHttpClientConnector" />
 	</sequence>

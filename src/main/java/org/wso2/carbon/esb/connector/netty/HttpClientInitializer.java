@@ -23,22 +23,32 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.proxy.HttpProxyHandler;
 import io.netty.handler.ssl.SslContext;
+import org.wso2.carbon.esb.connector.ProxyServerConfig;
 
 public class HttpClientInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
     private org.apache.axis2.context.MessageContext messageContext;
+    private ProxyServerConfig proxyServerConfig;
 
-    public HttpClientInitializer(SslContext sslCtx, org.apache.axis2.context.MessageContext messageContext) {
+    public HttpClientInitializer(SslContext sslCtx, org.apache.axis2.context.MessageContext messageContext,
+            ProxyServerConfig proxyServerConfig) {
         this.sslCtx = sslCtx;
         this.messageContext = messageContext;
+        this.proxyServerConfig = proxyServerConfig;
     }
 
     @Override
     public void initChannel(SocketChannel ch) {
         ChannelPipeline p = ch.pipeline();
 
+        if (proxyServerConfig != null) {
+            p.addLast(
+                    new HttpProxyHandler(proxyServerConfig.getInetSocketAddress(), proxyServerConfig.getProxyUsername(),
+                            proxyServerConfig.getProxyPassword()));
+        }
         // Enable HTTPS if necessary.
         if (sslCtx != null) {
             p.addLast(sslCtx.newHandler(ch.alloc()));

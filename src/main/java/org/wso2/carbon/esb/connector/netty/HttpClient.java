@@ -28,11 +28,13 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.proxy.ProxyConnectException;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.esb.connector.ProxyServerConfig;
 
 import java.net.URI;
 import java.util.Iterator;
@@ -45,8 +47,8 @@ public final class HttpClient {
 
     private static final Log log = LogFactory.getLog(HttpClient.class);
 
-    public static void sendReceive(URI uri, HttpRequest request, org.apache.axis2.context.MessageContext messageContext)
-            throws Exception {
+    public static void sendReceive(URI uri, HttpRequest request, org.apache.axis2.context.MessageContext messageContext,
+            ProxyServerConfig proxyServerConfig) throws Exception {
 
         String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
         String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
@@ -75,7 +77,8 @@ public final class HttpClient {
         EventLoopGroup group = new NioEventLoopGroup(1);
         try {
             Bootstrap b = new Bootstrap();
-            b.group(group).channel(NioSocketChannel.class).handler(new HttpClientInitializer(sslCtx, messageContext));
+            b.group(group).channel(NioSocketChannel.class)
+                    .handler(new HttpClientInitializer(sslCtx, messageContext, proxyServerConfig));
 
             // Make the connection attempt.
             Channel ch = b.connect(host, port).sync().channel();
@@ -92,6 +95,7 @@ public final class HttpClient {
 
     /**
      * Create the Netty Request using axis2MessageContext
+     *
      * @param uri
      * @param httpMethod
      * @param bbuf
